@@ -4,6 +4,7 @@ import os
 from openai import OpenAI
 import argparse
 import json
+import io
 
 # ANSI escape codes for colors
 PINK = '\033[95m'
@@ -127,18 +128,40 @@ if os.path.exists("vault.txt"):
     with open("vault.txt", "r", encoding='utf-8') as vault_file:
         vault_content = vault_file.readlines()
 
-# Generate embeddings for the vault content using Ollama
-print(NEON_GREEN + "Generating embeddings for the vault content..." + RESET_COLOR)
-vault_embeddings = []
-for content in vault_content:
-    response = ollama.embeddings(model='mxbai-embed-large', prompt=content)
-    vault_embeddings.append(response["embedding"])
+# Load the embeddings file if it exists
 
-# Convert to tensor and print embeddings
-print("Converting embeddings to tensor...")
-vault_embeddings_tensor = torch.tensor(vault_embeddings) 
-print("Embeddings for each line in the vault:")
-print(vault_embeddings_tensor)
+try:
+    vault_embeddings_tensor = torch.load('tensor_embeddings.pt')
+    print(NEON_GREEN + "Loading tensors file...")
+except:
+    vault_embeddings_tensor = None
+    pass
+
+# Generate embeddings for the vault content using Ollama
+if vault_embeddings_tensor == None:
+    print(NEON_GREEN + "Generating embeddings for the vault content..." + RESET_COLOR)
+    vault_embeddings = []
+    for content in vault_content:
+        if (len(content.strip()) > 0):
+            #print(NEON_GREEN + ">" + content + RESET_COLOR)
+            response = ollama.embeddings(model='mxbai-embed-large', prompt=content)
+            vault_embeddings.append(response["embedding"])
+        else:
+            print(NEON_GREEN + "! skip empty line" + RESET_COLOR)
+    
+    # Convert to tensor and print embeddings
+    print("Converting embeddings to tensor...")
+    vault_embeddings_tensor = torch.tensor(vault_embeddings) 
+    print("Embeddings for each line in the vault:")
+    print(vault_embeddings_tensor)
+    
+    # Save new embeddings
+    save_embeddings = input("Do you want to save the embeddings to a cache? y/n \n")
+    if save_embeddings == "y":
+        torch.save(vault_embeddings_tensor, 'tensor_embeddings.pt')
+else:
+    print(NEON_GREEN + "Embeddings loaded from file. Delete tensor_embeddings.pt if you wish to regenerate embeddings")
+    print(vault_embeddings_tensor)
 
 # Conversation loop
 print("Starting conversation loop...")
