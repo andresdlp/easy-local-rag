@@ -43,9 +43,19 @@ def convert_pdf_to_text():
 
 # Function to upload a text file and append to vault.txt
 def upload_txtfile():
+
+    user_file_encoding="utf-8"
+
     file_path = filedialog.askopenfilename(filetypes=[("Text Files", "*.txt")])
     if file_path:
-        with open(file_path, 'r', encoding="utf-8") as txt_file:
+
+        try:
+            with open(file_path, 'r', encoding="utf-8") as txt_file:
+                text = txt_file.read()
+        except:
+            user_file_encoding = "ansi"
+
+        with open(file_path, 'r', encoding=user_file_encoding) as txt_file:
             text = txt_file.read()
             
             # Normalize whitespace and clean up text
